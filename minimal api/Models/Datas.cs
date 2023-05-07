@@ -12,7 +12,6 @@ namespace Data.Models
 {
     public class Error
     {
-        [IgnoreDataMember]
         public int Id { get; set; }
         public string? module { get; set; }
         public int ecode { get; set; }
@@ -20,7 +19,6 @@ namespace Data.Models
     }
     public class Files
     {
-        [IgnoreDataMember]
         public int Id { get; set; }
         public string? filename { get; set; }
         public bool result { get; set; }
@@ -32,7 +30,7 @@ namespace Data.Models
         public string? filename { get; set; }
         public ICollection<Error>? errors { get; set; }
 
-        public FilesErrorsDTO() { }
+        public FilesErrorsDTO() { }  
         public FilesErrorsDTO(Files files) => (filename, errors) = (files.filename, files.errors);
     }
     public class Datas
@@ -64,15 +62,9 @@ namespace Data.Models
         public int total { get; set; }
         public int correct { get; set; }
         public int errors_count { get; set; }
-        public string? filename { get; set; }
         public string[]? filenames { get; set; }
 
-        public FilenameCheckDTO(Datas datas) => (total, correct, errors_count, filenames) = (
-            datas.files.Count(f => f.filename.Contains("query_")),
-            datas.files.Count(f => f.filename.Contains("query_") && f.result == true),
-            datas.files.Count(f => f.filename.Contains("query_") && f.result == false),
-            datas.files.Where(f => f.filename.Contains("query_") && f.result == false).Select(f => f.filename).ToArray()
-            );
+
     }
     public class ServiceInfoDto
     {
@@ -82,7 +74,7 @@ namespace Data.Models
         static Version? ver = thisAssemName.Version;
 
         public string? AppName { get { return thisAssemName.ToString(); } set { AppName = value; } }
-        public string? Version { get { return ver.ToString(); } set { Version = value; } }
+        public string? Version { get { return ver?.ToString(); } set { Version = value; } }
         public DateTime DateUtc { get { return DateTime.Now; } set { DateUtc = value; } }
 
     }

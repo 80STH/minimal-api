@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DatasContext>(opt => opt.UseInMemoryDatabase("Datas"));
 //builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 var app = builder.Build();
-Datas? dataJson = new Datas(); //поскольку требуется результаты считывания файла, нужна глобальная переменная
+Datas? dataJson = new Datas(); //поскольку требуются результаты считывания файла, нужна глобальная переменная
 
 app.MapGet("/api/allData", (DatasContext db) =>
 {
@@ -18,8 +18,8 @@ app.MapGet("/api/allData", (DatasContext db) =>
 app.MapGet("/api/scan", async (DatasContext db) =>
     await db.Scan.ToArrayAsync());
 
-//выбрасывает исключение при наличии вопросительного знака, но корректность все равно будет проверена
-app.MapGet("api/filenames/{value}", async (bool value, DatasContext db) =>
+//выбрасывает исключение при наличии вопросительного знака, {value:bool} возвращает 404 при неправильном вводе
+app.MapGet("api/filenames/{value:bool}", async (bool value, DatasContext db) =>
     await db.Files.Where(r => r.result == value).Select(f => f.filename).ToArrayAsync());
 
 app.MapGet("api/errors", (DatasContext db) =>
@@ -41,7 +41,7 @@ app.MapGet("api/errors/count", async (DatasContext db) =>
             ? Results.Ok(scan.errorCount)
             : Results.NotFound());
 
-app.MapGet("api/errors/{index}", (int index, DatasContext db) =>
+app.MapGet("api/errors/{index:int}", (int index, DatasContext db) =>
 { 
     var errorsDto = from b in db.Files
                     where b.result == false
@@ -61,7 +61,8 @@ app.MapGet("api/errors/{index}", (int index, DatasContext db) =>
 app.MapGet("api/query/check", (DatasContext db) =>
 {
     var checkDto = from d in db.Datas
-                   select new FilenameCheckDTO(d)
+                   where d.files != null 
+                   select new FilenameCheckDTO()
                    {
                        total = d.files.Count(f => f.filename.Contains("query_")),
                        correct = d.files.Count(f => f.filename.Contains("query_") && f.result == true),
@@ -80,13 +81,15 @@ app.MapGet("api/service/serviceinfo", (DatasContext db) =>
 app.MapPost("/api/newErrors", async (HttpRequest request, DatasContext db) =>
 {
     dataJson = await request.ReadFromJsonAsync<Datas>();
-    db.Datas.Add(dataJson);
-    await db.SaveChangesAsync();
 
-    if (dataJson == null)
-        return Results.NoContent();
-    else
+    if (dataJson != null)
+    {
+        db.Datas.Add(dataJson);
+        await db.SaveChangesAsync();
         return Results.Created($"/allData/{dataJson.Id}", dataJson);
+    }
+    else
+        return Results.NoContent();
 });
 
 app.Run();
