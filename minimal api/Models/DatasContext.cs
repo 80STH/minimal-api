@@ -17,6 +17,5 @@ namespace Data.Models
         public DbSet<Error> Errors { get; set; } = null!;
 
 
-
     }
 }

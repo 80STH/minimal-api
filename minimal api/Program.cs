@@ -16,20 +16,21 @@ app.MapGet("/api/allData", (DatasContext db) =>
 });
 
 app.MapGet("/api/scan", async (DatasContext db) =>
-    await db.Scan.ToArrayAsync());
+    await db.Scan.Select(scan => new ScanDTO {ScanTime = scan.ScanTime, Db = scan.Db, Server = scan.Server, ErrorCount = scan.ErrorCount }).ToListAsync());
 
-//выбрасывает исключение при наличии вопросительного знака, {value:bool} возвращает 404 при неправильном вводе
+//выбрасывает исключение при наличии вопросительного знака
+//{value:bool} возвращает 404 при неправильном вводе
 app.MapGet("api/filenames/{value:bool}", async (bool value, DatasContext db) =>
-    await db.Files.Where(r => r.result == value).Select(f => f.filename).ToArrayAsync());
+    await db.Files.Where(r => r.Result == value).Select(f => f.Filename).ToListAsync());
 
 app.MapGet("api/errors", (DatasContext db) =>
 {
     var errorsDto = from b in db.Files
-                    where b.result == false
+                    where b.Result == false
                     select new FilesErrorsDTO(b)
                     {
-                        filename = b.filename,
-                        errors = b.errors
+                        Filename = b.Filename,
+                        Errors = b.errors
                     };
     return errorsDto;
 });
@@ -38,17 +39,17 @@ app.MapGet("api/errors", (DatasContext db) =>
 app.MapGet("api/errors/count", async (DatasContext db) =>
     await db.Scan.FindAsync(1)
         is Scan scan
-            ? Results.Ok(scan.errorCount)
+            ? Results.Ok(scan.ErrorCount)
             : Results.NotFound());
 
 app.MapGet("api/errors/{index:int}", (int index, DatasContext db) =>
 { 
     var errorsDto = from b in db.Files
-                    where b.result == false
+                    where b.Result == false
                     select new FilesErrorsDTO(b)
                     {
-                        filename = b.filename,
-                        errors = b.errors
+                        Filename = b.Filename,
+                        Errors = b.errors
                     };
     if (index < errorsDto.ToList().Count)
         return Results.Ok(errorsDto.ToList()[index]);
@@ -61,13 +62,13 @@ app.MapGet("api/errors/{index:int}", (int index, DatasContext db) =>
 app.MapGet("api/query/check", (DatasContext db) =>
 {
     var checkDto = from d in db.Datas
-                   where d.files != null 
+                   where d.Files != null 
                    select new FilenameCheckDTO()
                    {
-                       total = d.files.Count(f => f.filename.Contains("query_")),
-                       correct = d.files.Count(f => f.filename.Contains("query_") && f.result == true),
-                       errors_count = d.files.Count(f => f.filename.Contains("query_") && f.result == false),
-                       filenames = d.files.Where(f => f.filename.Contains("query_") && f.result == false).Select(f => f.filename).ToArray()
+                       Total = d.Files.Count(f => f.Filename.Contains("query_")),
+                       Correct = d.Files.Count(f => f.Filename.Contains("query_") && f.Result == true),
+                       Errors_count = d.Files.Count(f => f.Filename.Contains("query_") && f.Result == false),
+                       Filenames = d.Files.Where(f => f.Filename.Contains("query_") && f.Result == false).Select(f => f.Filename).ToArray()
                    };
     return checkDto;
 });
